@@ -1,0 +1,108 @@
+/**
+ * This software is released into the public domain.
+ */
+#define _DEFAULT_SOURCE
+
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdatomic.h>
+#include <pthread.h>
+
+typedef _Atomic(u_int64_t) Counter;
+//typedef u_int64_t Counter;
+
+typedef struct ClientParams {
+  pthread_t thread;
+  u_int64_t loops;
+  u_int64_t initial;
+  Counter* pU64;
+  u_int64_t final;
+} ClientParams;
+
+void* client(void* p) {
+  ClientParams* params = (ClientParams*)p;
+  //printf("client:+%p\n", p);
+  params->initial = *params->pU64;
+  for (u_int64_t i = 0; i < params->loops; i++) {
+     *params->pU64 += 1;
+  }
+  params->final = *params->pU64;
+  //printf("client:-%p\n", p);
+  return NULL;
+}
+
+Counter gU64;
+
+void multi_thread(const u_int32_t client_count, const u_int64_t loops) {
+  int error;
+  ClientParams clients[client_count];
+
+  gU64 = 0;
+  u_int32_t clients_created = 0;
+  for (u_int32_t i = 0; i < client_count; i++, clients_created++) {
+    clients[i].loops = loops;
+    clients[i].pU64 = &gU64;
+    error = pthread_create(&clients[i].thread, NULL, client, (void*)&clients[i]);
+    if (error != 0) {
+      printf("multi_thread: aborting, clients[%u]=%p error=%d\n", i, (void*)&clients[i], error);
+      goto done;
+    }
+  }
+
+  printf("multi_thread: success, created %u clients\n", clients_created);
+
+done:
+  printf("multi_thread: done, joining %u clients\n", clients_created);
+  for (u_int32_t i = 0; i < clients_created; i++) {
+    error = pthread_join(clients[i].thread, NULL);
+    if (error != 0) {
+      printf("multi_thread: joing failed, clients[%u]=%p error=%d\n", i, (void*)&clients[i], error);
+    }
+    printf("multi_thread: clients[%u]=%p loops=%lu initial=%ld final=%lu\n",
+        i, (void*)&clients[i], clients[i].loops, clients[i].initial, clients[i].final);
+  }
+  u_int64_t expected_value = loops * clients_created;
+  printf("multi_thread: %u clients gU64=%lu %s expected_value=%lu\n",
+      clients_created, gU64, gU64 == expected_value ? "==" : "!=", expected_value);
+}
+
+
+_Atomic(int) ai = 0;
+_Atomic(int) bi = 0;
+int i = 0;
+int j = 0;
+
+void simple(void) {
+  ai += 1;
+  bi = 3;
+
+  _Atomic(int) tmp;
+  tmp = ai;
+  ai = bi;
+  bi = tmp;
+  printf("ai=%d bi=%d tmp=%d\n", ai, bi, tmp);
+
+  __atomic_store_n(&i, -1, __ATOMIC_RELEASE);
+  __atomic_store_n(&j, -2, __ATOMIC_SEQ_CST); //RELEASE); //__ATOMIC_SEQ_CST);
+
+  __atomic_fetch_add(&i, 2, __ATOMIC_SEQ_CST);
+  __atomic_fetch_add(&j, 1, __ATOMIC_SEQ_CST);
+
+  //printf("before exchange j=%d i=%d\n", j, i);
+  __atomic_exchange(&i, &j, &j, __ATOMIC_SEQ_CST);
+  printf("after  exchange j=%d i=%d\n", j, i);
+}
+
+int main(int argc, const char* argv[]) {
+  if (argc != 3) {
+    printf("%s <client_count> <loops>\n", argv[0]);
+    return 1;
+  }
+
+  simple();
+  u_int32_t client_count = strtol(argv[1], NULL, 10);
+  u_int64_t loops = strtoul(argv[2], NULL, 10);
+  multi_thread(client_count, loops);
+  return 0;
+}
