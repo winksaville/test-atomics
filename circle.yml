@@ -32,6 +32,14 @@ test:
         echo good bye
       exit 0
 
+    - | # Try pyton inline
+      #!/usr/bin/env python3
+
+      import sys
+
+      print('hello world, using python')
+      sys.exit(0)
+
 
     #- make run cc=gcc   client_count=1 loops=1000000
     #- make run cc=gcc   client_count=2 loops=1000000
