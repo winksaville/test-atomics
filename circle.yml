@@ -12,38 +12,7 @@ test:
     - clang --version
 
   override:
-    - | # Remove empty blank lines but keep last one
-      set -x
-      echo hello
-        echo good bye
-      exit 0
-
-
-    - |- # Test remove empty blanks at end
-      set -x
-      echo hello
-        echo good bye
-      exit 0
-
-
-    - |+ # Keep all blank lines
-      set -x
-      echo hello
-        echo good bye
-      exit 0
-
-    - | # Try pyton inline
-      python3 -c '
-      import os
-
-      print("hello world, using python")
-      print('\''quite single quotes'\'')
-      os.mkdir("build")
-      os.chdir("build")
-      print("cwd=", os.getcwd())
-      '
-
-    #- make run cc=gcc   client_count=1 loops=1000000
-    #- make run cc=gcc   client_count=2 loops=1000000
-    #- make run cc=clang client_count=1 loops=1000000
-    #- make run cc=clang client_count=2 loops=1000000
+    - make run cc=gcc   client_count=1 loops=1000000
+    - make run cc=gcc   client_count=2 loops=1000000
+    - make run cc=clang client_count=1 loops=1000000
+    - make run cc=clang client_count=2 loops=1000000
