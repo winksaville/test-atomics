@@ -1,3 +1,4 @@
+# Turn off builtin implicit rules
 .SUFFIXES:
 
 NAME=test-atomics
@@ -11,4 +12,4 @@ run : ${NAME}
 	@./${NAME} ${client_count} ${loops}
 
 clean :
-	@rm -f ${NAME}
+	@rm -f ${NAME} ${NAME}.txt
