@@ -34,10 +34,13 @@ test:
 
     - | # Try pyton inline
       python3 -c '
-      import sys
+      import os
 
       print("hello world, using python")
-      sys.exit(0)
+      print('\''quite single quotes'\'')
+      os.mkdir("build")
+      os.chdir("build")
+      print("cwd=", os.getcwd())
       '
 
     #- make run cc=gcc   client_count=1 loops=1000000
